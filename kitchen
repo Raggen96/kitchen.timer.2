@@ -1,0 +1,185 @@
+
+# coding: utf-8
+
+# # State Machine for the Kitchen Timer
+# 
+# This is material for the lecture, not part of the mandatory preparation.
+
+# In[1]:
+
+from stmpy import Machine, Driver
+
+import ipywidgets as widgets
+from IPython.display import display
+
+class KitchenTimer:
+    
+    def on_button_press(self, b):
+        self.stm.send_signal('press') # <---- here we send a signal
+            
+    def __init__(self):
+        # load images and store them
+        self.on_60 = open("images/timer/on_60.jpg", "rb").read()
+        self.off_60 = open("images/timer/off_60.jpg", "rb").read()
+        self.on_45 = open("images/timer/on_45.jpg", "rb").read()
+        self.off_45 = open("images/timer/off_45.jpg", "rb").read()
+        self.on_30 = open("images/timer/on_30.jpg", "rb").read()
+        self.off_30 = open("images/timer/off_30.jpg", "rb").read()
+        self.on_15 = open("images/timer/on_15.jpg", "rb").read()
+        self.off_15 = open("images/timer/off_15.jpg", "rb").read()
+        self.plug_on = open("images/timer/plug_on.jpg", "rb").read()
+        self.plug_off = open("images/timer/plug_off.jpg", "rb").read()
+        
+        self.led_15 = widgets.Image(value=self.off_15, format='jpg', width=50, height=50)
+        self.led_30 = widgets.Image(value=self.off_30, format='jpg', width=50, height=50)
+        self.led_45 = widgets.Image(value=self.off_45, format='jpg', width=50, height=50)
+        self.led_60 = widgets.Image(value=self.off_60, format='jpg', width=50, height=50)
+        
+        left_box = widgets.VBox([self.led_60, self.led_45])
+        right_box = widgets.VBox([self.led_15, self.led_30])
+        box = widgets.HBox([left_box, right_box])
+        self.plug = widgets.Image(value=self.plug_off, format='jpg', width=100, height=100)
+        
+        # display the user interface
+        # a button
+        self.button = widgets.Button(description="Button")
+        self.button.on_click(self.on_button_press)
+        
+        
+        
+        
+        display(box, self.button, self.plug)
+        
+    
+    def switch_led(self, led, on):
+        if led is '15' and on: self.led_15.set_trait(name='value', value=self.on_15)
+        if led is '15' and not on: self.led_15.set_trait(name='value', value=self.off_15) 
+        if led is '30' and on: self.led_30.set_trait(name='value', value=self.on_30)
+        if led is '30' and not on: self.led_30.set_trait(name='value', value=self.off_30) 
+        if led is '45' and on: self.led_45.set_trait(name='value', value=self.on_45)
+        if led is '45' and not on: self.led_45.set_trait(name='value', value=self.off_45) 
+        if led is '60' and on: self.led_60.set_trait(name='value', value=self.on_60)
+        if led is '60' and not on: self.led_60.set_trait(name='value', value=self.off_60) 
+            
+    def switch_plug(self, on):
+        if on: self.plug.set_trait(name='value', value=self.plug_on)
+        else: self.plug.set_trait(name='value', value=self.plug_off) 
+            
+    def start_timer(self):
+        # start the timer
+        self.stm.start_timer('t', 1000)
+        
+    def fifteen_on(self):
+        self.switch_led('15',True)
+    def fifteen_off(self):
+        self.switch_led('15',False)
+    def thirty_on(self):
+        self.switch_led('30',True)
+    def thirty_off(self):
+        self.switch_led('30',False)
+    def fortyfive_on(self):
+        self.switch_led('45',True)
+    def fortyfive_off(self):
+        self.switch_led('45',False)
+    def sixty_on(self):
+        self.switch_led('60',True)
+    def sixty_off(self):
+        self.switch_led('60',False)
+
+    def switch_plug_on(self):
+        self.switch_plug(True)
+
+    def switch_plug_off(self):
+        self.switch_led('15',False)
+        self.switch_led('30',False)
+        self.switch_led('45',False)
+        self.switch_led('60',False)
+        self.switch_plug(False)
+
+
+# In[2]:
+
+k = KitchenTimer()
+#k.switch_led('15', True)     
+#k.switch_plug(True)
+
+t0 = {'source': 'initial',
+      'target': 'off'}
+
+t1 = {'trigger':'press',
+      'source':'off',
+      'target':'on_1'
+}
+t2 = {'trigger':'press', 
+      'source':'on_1', 
+      'target':'on_2'
+}
+t3 = {'trigger':'press', 
+      'source':'on_2', 
+      'target':'on_3'
+}
+t4 = {'trigger':'press', 
+      'source':'on_3', 
+      'target':'on_4'
+}
+t5 = {'trigger':'press', 
+      'source':'on_4', 
+      'target':'off'
+}
+##triggers on timers
+t6 = {'trigger':'t',
+      'source':'on_4',
+      'target':'on_3',
+      'effect': 'sixty_off'
+      
+}
+t7 = {'trigger':'t', 
+      'source':'on_3', 
+      'target':'on_2',
+      'effect': 'fortyfive_off'
+}
+t8 = {'trigger':'t', 
+      'source':'on_2', 
+      'target':'on_1', 
+      'effect': 'thirty_off'
+}
+t9 = {'trigger':'t',
+       'source':'on_1',
+       'target':'off',
+       'effect': 'fifteen_off'
+}
+##States
+off = {'name': 'off',
+       'entry': 'switch_plug_off'
+}
+on_1 = {'name': 'on_1',
+       'entry': 'switch_plug_on; start_timer; fifteen_on'
+}
+on_2 = {'name': 'on_2',
+       'entry': 'start_timer; thirty_on'
+}
+on_3 = {'name': 'on_3',
+       'entry': 'start_timer; fortyfive_on'
+}
+on_4 = {'name': 'on_4',
+       'entry': 'start_timer; sixty_on'
+}
+
+
+stm_timer = Machine(name='stm_timer', transitions=[t0, t1, t2, t3, t4, t5,t6,t7,t8,t9], obj=k, states=[off,on_1,on_2,on_3,on_4])
+k.stm = stm_timer
+
+driver = Driver()
+driver.add_machine(stm_timer)
+driver.start()
+
+
+# In[ ]:
+
+
+
+
+# In[ ]:
+
+
+
